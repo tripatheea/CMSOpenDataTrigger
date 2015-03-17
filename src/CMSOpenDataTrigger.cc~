@@ -1,4 +1,6 @@
 #include <memory>
+#include <iostream>
+
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
 
@@ -11,6 +13,19 @@
 
 
 #include "DataFormats/Common/interface/TriggerResults.h"
+
+#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Common/interface/TriggerNames.h"
+
+#include "FWCore/Common/interface/TriggerResultsByName.h"
+
+
+using namespace std;
+using namespace edm;
+using namespace trigger;
 
 //
 // class declaration
@@ -33,12 +48,20 @@ class CMSOpenDataTrigger : public edm::EDProducer {
       virtual void beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
       virtual void endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
 
+      /// Make this a configurable module parameter of your plugin:
+      const string processName_; // process name of (HLT) process for which to get HLT configuration
+
+      /// The instance of the HLTConfigProvider as a data member
+      //HLTConfigProvider hltConfig_;
+
       // ----------member data ---------------------------
 };
 
 //
 // constants, enums and typedefs
 //
+
+
 
 
 //
@@ -61,7 +84,7 @@ CMSOpenDataTrigger::CMSOpenDataTrigger(const edm::ParameterSet& iConfig)
    produces<ExampleData2,InRun>();
 */
    //now do what ever other initialization is needed
-  
+
 }
 
 
@@ -80,7 +103,6 @@ CMSOpenDataTrigger::~CMSOpenDataTrigger()
 
 // ------------ method called to produce the data  ------------
 void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  using namespace std;
 
   int eventNum = iEvent.id().event();
   int runNum = iEvent.id().run();
@@ -88,16 +110,28 @@ void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSet
   cout << "Event Number: " << eventNum << endl;
   cout << "Run Number: " << runNum << endl;
 
-  edm::Handle<edm::TriggerResults> trigger_results_collection;
-  iEvent.getByLabel("TriggerResults", trigger_results_collection);
+  //edm::Handle<edm::TriggerResults> trigger_results_collection;
+  //iEvent.getByLabel("TriggerResults", trigger_results_collection);
   
-  cout << "Trigger Results Collection Size: " << trigger_results_collection->size() << endl;
+  //cout << "Trigger Results Collection Size: " << trigger_results_collection->size() << endl;
 
-  edm::ParameterSetID pset_id = trigger_results_collection->parameterSetID();
+  //  edm::ParameterSetID pset_id = trigger_results_collection->parameterSetID();
   
-  //  edm::ParameterSet pset = edm::ParameterSet(string (pset_id));
+  //edm::ParameterSet pset = edm::ParameterSet();
+  //pset.setID(pset_id);
 
-  cout << pset_id << endl; 
+  
+
+  //cout << "Original pset id: " << pset_id << endl; 
+  //cout << "Derived pset id: " << pset.id() << endl;
+  //cout << "Is pset registered? " << pset.isRegistered() << endl;
+
+  // edm::ParameterSet trigger_pset = pset.getParameterSet("");
+
+  //vector<string> trigger_names = trigger_pset.getParameter< vector<string> >("");
+
+  //cout << "Trigger names size: " << trigger_names.size() << endl;
+
   
 
   // You do this on the parameter set not on the parameter ID.
@@ -107,11 +141,33 @@ void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSet
   //  cout << trigger_names[j] << endl;
   //}
   
-  for (unsigned int i = 0; i < trigger_results_collection->size(); i++) {
-    const edm::HLTPathStatus trigger = (* trigger_results_collection)[i];
-    //cout << trigger->getTriggerNames() << endl;
-  }
+  //for (unsigned int i = 0; i < trigger_results_collection->size(); i++) {
+    // const edm::HLTPathStatus trigger = (* trigger_results_collection)[i];
+    // }
   
+
+  // New Attempt
+  edm::Handle<edm::TriggerResults> trigResults; //our trigger result object
+  edm::InputTag trigResultsTag("TriggerResults","","HLT"); //make sure have correct process on MC
+  
+  //data process=HLT, MC depends, Spring11 is REDIGI311X
+  
+  iEvent.getByLabel(trigResultsTag,trigResults);
+  
+  const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);  
+  cout << trigNames.size() << endl;
+   
+  const vector<string> names = trigNames.triggerNames();
+  
+  for(unsigned int i = 0; i < names.size(); i++) {
+    cout << names[i] << endl;
+  }
+  //std::string pathName="HLT_Jet370_v2";
+
+  //bool passTrig=trigResults.accept(trigNames.triggerIndex(pathName));  
+
+  
+
 }
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -126,9 +182,25 @@ CMSOpenDataTrigger::endJob() {
 }
 
 // ------------ method called when starting to processes a run  ------------
-void 
-CMSOpenDataTrigger::beginRun(edm::Run&, edm::EventSetup const&)
-{
+void CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetup){
+
+  //  bool changed(true);
+
+//   if (hltConfig_.init(iRun,iSetup,processName_,changed)) {
+//     // if init returns TRUE, initialisation has succeeded!
+//     if (changed) {
+//      // The HLT config has actually changed wrt the previous Run, hence rebook your
+//      // histograms or do anything else dependent on the revised HLT config
+//       std::cout << "Changed" << std::endl;
+//     }
+//   } else {
+//     // if init returns FALSE, initialisation has NOT succeeded, which indicates a problem
+//     // with the file and/or code and needs to be investigated!
+//     edm::LogError("MyAnalyzer") << " HLT config extraction failure with process name " << processName_;
+//     // In this case, all access methods will return empty values!
+//   }
+
+
 }
 
 // ------------ method called when ending the processing of a run  ------------

@@ -28,8 +28,8 @@ process.source = cms.Source("PoolSource",
 #process.source.lumisToProcess.extend(myLumis)
 
 
-process.myProducerLabel = cms.EDProducer('CMSOpenDataTrigger'
-)
+process.myProducerLabel = cms.EDProducer('CMSOpenDataTrigger')
+
 
 process.out = cms.OutputModule("PoolOutputModule",
     fileName = cms.untracked.string('myOutputFile.root')
