@@ -155,12 +155,17 @@ void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSet
   iEvent.getByLabel(trigResultsTag,trigResults);
   
   const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);  
-  cout << trigNames.size() << endl;
-   
   const vector<string> names = trigNames.triggerNames();
-  
+
+  //const edm::TriggerResultsByName results_and_names(trigResults, trigNames);
+
+
+
+
+
   for(unsigned int i = 0; i < names.size(); i++) {
-    cout << names[i] << endl;
+    bool accepted = (* trigResults).accept(trigNames.triggerIndex(names[i]));
+    cout << names[i] << ": " << accepted << endl;
   }
   //std::string pathName="HLT_Jet370_v2";
 
