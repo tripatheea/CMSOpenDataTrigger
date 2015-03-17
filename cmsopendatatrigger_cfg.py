@@ -28,7 +28,7 @@ process.source = cms.Source("PoolSource",
 #process.source.lumisToProcess.extend(myLumis)
 
 
-process.myFilterLabel = cms.EDFilter('CMSOpenDataTrigger')
+process.myProducerLabel = cms.EDProducer('CMSOpenDataTrigger')
 
 
 process.out = cms.OutputModule("PoolOutputModule",
@@ -40,6 +40,6 @@ process.out = cms.OutputModule("PoolOutputModule",
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(2))
 
   
-process.p = cms.Path(process.myFilterLabel)
+process.p = cms.Path(process.myProducerLabel)
 
 process.e = cms.EndPath(process.out)

@@ -3,7 +3,7 @@
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 
-#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/EDProducer.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
@@ -35,7 +35,7 @@ using namespace edm;
 using namespace trigger;
 
 
-class CMSOpenDataTrigger : public edm::EDFilter {
+class CMSOpenDataTrigger : public edm::EDProducer {
    public:
       explicit CMSOpenDataTrigger(const edm::ParameterSet&);
       ~CMSOpenDataTrigger();
@@ -44,10 +44,13 @@ class CMSOpenDataTrigger : public edm::EDFilter {
 
    private:
       virtual void beginJob() ;
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
+      virtual void produce(edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-      virtual bool beginRun(edm::Run&, edm::EventSetup const&);
-
+      
+      virtual void beginRun(edm::Run&, edm::EventSetup const&);
+      virtual void endRun(edm::Run&, edm::EventSetup const&);
+      virtual void beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
+      virtual void endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
       
       bool triggerFired(const std::string& triggerWildCard, const edm::TriggerResults& triggerResults);
       unsigned int findTrigger(const std::string& triggerWildCard);
@@ -61,8 +64,8 @@ class CMSOpenDataTrigger : public edm::EDFilter {
 
 
 CMSOpenDataTrigger::CMSOpenDataTrigger(const edm::ParameterSet& iConfig) : 
-  hltConfig_(),
-  hltInputTag_(iConfig.getParameter<edm::InputTag>("HLTInput"))
+	hltConfig_() ,
+	hltInputTag_("TriggerResults","","HLT") 
 {
   
 }
@@ -72,7 +75,6 @@ CMSOpenDataTrigger::~CMSOpenDataTrigger() { }
 
 void CMSOpenDataTrigger::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add < InputTag > ("HLTInput");
 }
 
 
@@ -80,11 +82,16 @@ void CMSOpenDataTrigger::beginJob() {
 
 }
 
+void CMSOpenDataTrigger::endJob() {
 
-bool CMSOpenDataTrigger::filter(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+}
+
+
+void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   edm::Handle<edm::TriggerResults> trigResults; 
-  iEvent.getByLabel(hltInputTag_,trigResults);
+
+  iEvent.getByLabel(hltInputTag_, trigResults);
 
   const vector<string> triggerNames = hltConfig_.triggerNames();
   
@@ -111,17 +118,11 @@ bool CMSOpenDataTrigger::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   }
   */
 
-  return 0;
 
 }
 
 
-void CMSOpenDataTrigger::endJob() {
-
-}
-
-
-bool CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetup){
+void CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetup){
   bool changed = true;
   if ( hltConfig_.init(iRun, iSetup, hltInputTag_.process(), changed) ) {
     // if init returns TRUE, initialisation has succeeded!
@@ -132,8 +133,19 @@ bool CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetu
     edm::LogError("TopPairElectronPlusJetsSelectionFilter_Error")
 				<< "Error! HLT config extraction with process name " << hltInputTag_.process() << " failed";
   }
-	
-  return 0;
+
+}
+
+void CMSOpenDataTrigger::endRun(edm::Run&, edm::EventSetup const&) {
+
+}
+
+void CMSOpenDataTrigger::beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&) {
+
+}
+
+void CMSOpenDataTrigger::endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&) {
+
 }
 
 bool CMSOpenDataTrigger::triggerFired(const std::string& triggerWildCard, const edm::TriggerResults& triggerResults) {
