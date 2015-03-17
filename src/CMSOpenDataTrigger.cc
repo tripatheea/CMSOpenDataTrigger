@@ -40,21 +40,19 @@ class CMSOpenDataTrigger : public edm::EDFilter {
       explicit CMSOpenDataTrigger(const edm::ParameterSet&);
       ~CMSOpenDataTrigger();
 
+      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
+   private:
       virtual void beginJob() ;
       virtual bool filter(edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
       virtual bool beginRun(edm::Run&, edm::EventSetup const&);
 
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
-	HLTConfigProvider hltConfig_;
-
-   private:
-
-      virtual void setupEventContent(edm::Event& iEvent);
-
       
+      bool triggerFired(const std::string& triggerWildCard, const edm::TriggerResults& triggerResults);
+      unsigned int findTrigger(const std::string& triggerWildCard);
+
+      HLTConfigProvider hltConfig_;      
       InputTag hltInputTag_;
 
 };
@@ -84,12 +82,25 @@ void CMSOpenDataTrigger::beginJob() {
 
 
 bool CMSOpenDataTrigger::filter(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  setupEventContent(iEvent);
+
+  edm::Handle<edm::TriggerResults> trigResults; 
+  iEvent.getByLabel(hltInputTag_,trigResults);
+
+  const vector<string> triggerNames = hltConfig_.triggerNames();
   
-  edm::Handle<edm::TriggerResults> trigResults; //our trigger result object
-  edm::InputTag trigResultsTag("TriggerResults","","HLT"); //make sure have correct process on MC
-  
-  iEvent.getByLabel(trigResultsTag,trigResults);
+  for (unsigned int i = 0; i < triggerNames.size(); i++) {
+    const string name = triggerNames[i];
+    pair<int, int> prescale = hltConfig_.prescaleValues(iEvent, iSetup, name);
+    bool fired = triggerFired(name, ( * trigResults));
+
+    cout << (i + 1) << ") " << name << "; " << prescale.first << ", " << prescale.second << "; " << fired << endl;
+  }
+
+
+  /*
+  // Alternate way to get triggers. 
+  // This is limited in scope; for example, it's extremely difficult to find prescale values this way. 
+  // So use this only for testing stuff.
   
   const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);  
   const vector<string> names = trigNames.triggerNames();
@@ -98,6 +109,7 @@ bool CMSOpenDataTrigger::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
     bool accepted = (* trigResults).accept(trigNames.triggerIndex(names[i]));
     cout << names[i] << ": " << accepted << endl;
   }
+  */
 
   return 0;
 
@@ -111,17 +123,50 @@ void CMSOpenDataTrigger::endJob() {
 
 bool CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetup){
   bool changed = true;
-  bool correct = hltConfig_.init(iRun, iSetup, hltInputTag_.process(), changed);
+  if ( hltConfig_.init(iRun, iSetup, hltInputTag_.process(), changed) ) {
+    // if init returns TRUE, initialisation has succeeded!
+    edm::LogInfo("TopPairElectronPlusJetsSelectionFilter") << "HLT config with process name "
+				<< hltInputTag_.process() << " successfully extracted";
+  }
+  else {
+    edm::LogError("TopPairElectronPlusJetsSelectionFilter_Error")
+				<< "Error! HLT config extraction with process name " << hltInputTag_.process() << " failed";
+  }
 	
   return 0;
 }
 
+bool CMSOpenDataTrigger::triggerFired(const std::string& triggerWildCard, const edm::TriggerResults& triggerResults) {
+  bool fired = false;
+  unsigned int index = findTrigger(triggerWildCard);
 
+  if (index < triggerResults.size()) {
+    if (triggerResults.accept(index)) {
+      fired = true;
+    }
+  }
 
-
-void CMSOpenDataTrigger::setupEventContent(edm::Event& iEvent) {
+  return fired;
 
 }
+
+unsigned int CMSOpenDataTrigger::findTrigger(const std::string& triggerWildCard) {
+  const std::vector<std::string>& triggers = hltConfig_.triggerNames();
+  unsigned int found = 9999;
+
+  size_t length = triggerWildCard.size();
+  for (unsigned int index = 0; index < triggers.size(); ++index) {
+    if (length <= triggers[index].size() && triggerWildCard == triggers[index].substr(0, length)) {
+      found = index;
+      break;
+    }
+  }
+
+  return found;
+}
+
+
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(CMSOpenDataTrigger);
