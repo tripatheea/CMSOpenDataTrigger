@@ -1,27 +1,93 @@
-#include "../interface/CMSOpenDataTrigger.h"
+#include <memory>
+#include <iostream>
 
-CMSOpenDataTrigger::CMSOpenDataTrigger(const edm::ParameterSet& iConfig) {
-  useL1EventSetup = false;
-  useL1GtTriggerMenuLite = true;
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+
+#include "FWCore/Framework/interface/EDFilter.h"
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+
+
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "DataFormats/Common/interface/HLTGlobalStatus.h"
+#include "DataFormats/Provenance/interface/ParameterSetID.h"
+
+
+#include "DataFormats/Common/interface/TriggerResults.h"
+
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+
+#include "FWCore/Common/interface/TriggerNames.h"
+
+#include "FWCore/Common/interface/TriggerResultsByName.h"
+
+
+#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
+
+using namespace std;
+using namespace edm;
+using namespace trigger;
+
+
+class CMSOpenDataTrigger : public edm::EDFilter {
+   public:
+      explicit CMSOpenDataTrigger(const edm::ParameterSet&);
+      ~CMSOpenDataTrigger();
+
+
+      virtual void beginJob() ;
+      virtual bool filter(edm::Event&, const edm::EventSetup&);
+      virtual void endJob() ;
+      virtual bool beginRun(edm::Run&, edm::EventSetup const&);
+
+      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+	HLTConfigProvider hltConfig_;
+
+   private:
+
+      virtual void setupEventContent(edm::Event& iEvent);
+
+      
+      InputTag hltInputTag_;
+
+};
+
+
+
+
+CMSOpenDataTrigger::CMSOpenDataTrigger(const edm::ParameterSet& iConfig) : 
+  hltConfig_(),
+  hltInputTag_(iConfig.getParameter<edm::InputTag>("HLTInput"))
+{
+  
 }
 
 
 CMSOpenDataTrigger::~CMSOpenDataTrigger() { }
 
+void CMSOpenDataTrigger::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  edm::ParameterSetDescription desc;
+  desc.add < InputTag > ("HLTInput");
+}
 
-// ------------ method called to produce the data  ------------
-void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
-  int eventNum = iEvent.id().event();
-  int runNum = iEvent.id().run();
+void CMSOpenDataTrigger::beginJob() {
 
-  cout << "Event Number: " << eventNum << endl;
-  cout << "Run Number: " << runNum << endl;
+}
+
+
+bool CMSOpenDataTrigger::filter(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  setupEventContent(iEvent);
   
   edm::Handle<edm::TriggerResults> trigResults; //our trigger result object
   edm::InputTag trigResultsTag("TriggerResults","","HLT"); //make sure have correct process on MC
-  
-  //data process=HLT, MC depends, Spring11 is REDIGI311X
   
   iEvent.getByLabel(trigResultsTag,trigResults);
   
@@ -33,45 +99,28 @@ void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSet
     cout << names[i] << ": " << accepted << endl;
   }
 
-}
-
-// ------------ method called once each job just before starting event loop  ------------
-void CMSOpenDataTrigger::beginJob() {
+  return 0;
 
 }
 
-// ------------ method called once each job just after ending the event loop  ------------
+
 void CMSOpenDataTrigger::endJob() {
 
 }
 
-// ------------ method called when starting to processes a run  ------------
-void CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetup){
 
+bool CMSOpenDataTrigger::beginRun(edm::Run & iRun, edm::EventSetup const & iSetup){
+  bool changed = true;
+  bool correct = hltConfig_.init(iRun, iSetup, hltInputTag_.process(), changed);
+	
+  return 0;
 }
 
-// ------------ method called when ending the processing of a run  ------------
-void CMSOpenDataTrigger::endRun(edm::Run&, edm::EventSetup const&) {
 
-}
 
-// ------------ method called when starting to processes a luminosity block  ------------
-void CMSOpenDataTrigger::beginLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&) {
 
-}
+void CMSOpenDataTrigger::setupEventContent(edm::Event& iEvent) {
 
-// ------------ method called when ending the processing of a luminosity block  ------------
-void CMSOpenDataTrigger::endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&) {
-
-}
-
-// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-void CMSOpenDataTrigger::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  //The following says we do not know what parameters are allowed so do no validation
-  // Please change this to state exactly what you do use, even if it is no parameters
-  edm::ParameterSetDescription desc;
-  desc.setUnknown();
-  descriptions.addDefault(desc);
 }
 
 //define this as a plug-in
