@@ -1,5 +1,8 @@
 #include <memory>
 #include <iostream>
+#include <string>
+#include <fstream>
+#include <vector>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 
@@ -58,6 +61,9 @@ class CMSOpenDataTrigger : public edm::EDProducer {
       HLTConfigProvider hltConfig_;      
       InputTag hltInputTag_;
 
+      string triggersThatMatter_[7];	// Only these trigger info will be stored.
+
+      
 };
 
 
@@ -65,9 +71,10 @@ class CMSOpenDataTrigger : public edm::EDProducer {
 
 CMSOpenDataTrigger::CMSOpenDataTrigger(const edm::ParameterSet& iConfig) : 
 	hltConfig_() ,
-	hltInputTag_("TriggerResults","","HLT") 
+	hltInputTag_("TriggerResults","","HLT")
+	triggersThatMatter( {"HLT_L1Jet6U", "HLT_L1Jet10U", "HLT_Jet15U", "HLT_Jet30U", "HLT_Jet50U", "HLT_Jet70U", "HLT_Jet100U"} )
 {
-  
+
 }
 
 
@@ -95,12 +102,15 @@ void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSet
 
   const vector<string> triggerNames = hltConfig_.triggerNames();
   
+  std::ofstream csvOut_("triggers.csv");
+
   for (unsigned int i = 0; i < triggerNames.size(); i++) {
     const string name = triggerNames[i];
     pair<int, int> prescale = hltConfig_.prescaleValues(iEvent, iSetup, name);
     bool fired = triggerFired(name, ( * trigResults));
 
     cout << (i + 1) << ") " << name << "; " << prescale.first << ", " << prescale.second << "; " << fired << endl;
+    csvOut_ << name << endl;
   }
 
 
