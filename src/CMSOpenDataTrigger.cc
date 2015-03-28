@@ -61,6 +61,7 @@ class CMSOpenDataTrigger : public edm::EDProducer {
       ofstream csvOut_;
       HLTConfigProvider hltConfig_;      
       InputTag hltInputTag_;
+
 };
 
 
@@ -94,6 +95,7 @@ void CMSOpenDataTrigger::produce(edm::Event& iEvent, const edm::EventSetup& iSet
 
   int eventNumber = iEvent.id().event();
   int runNumber = iEvent.id().run();
+
 
   edm::Handle<edm::TriggerResults> trigResults; 
 

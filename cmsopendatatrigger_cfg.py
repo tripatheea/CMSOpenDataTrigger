@@ -5,6 +5,7 @@ import FWCore.Utilities.FileUtils as FileUtils
 from FWCore.MessageLogger.MessageLogger_cfi import *
 
 process = cms.Process("OPENDATA")
+
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -39,3 +40,4 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
   
 process.Producer = cms.Path(process.CMSOpenDataTrigger)
 process.schedule = cms.Schedule(process.Producer)
+
